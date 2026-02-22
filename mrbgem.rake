@@ -33,24 +33,32 @@ MRuby::Gem::Specification.new('mruby-compiler2') do |spec|
 
   next if %w(clean deep_clean).include?(Rake.application.top_level_tasks.first)
 
-  directory prism_dir do
+  # Ensure prism submodule is initialized.
+  # Note: `directory` task won't fire when the empty dir already exists
+  # (git clone creates submodule dirs as empty directories).
+  unless File.exist?("#{prism_dir}/include/prism.h")
     FileUtils.cd dir do
       sh "git submodule update --init"
     end
   end
 
-  task :prism_templates => prism_dir do
+  prism_generated_srcs = %w(node prettyprint serialize token_type diagnostic)
+  prism_generated_headers = %w(include/prism/ast.h include/prism/diagnostic.h)
+
+  # Generate templated files if any are missing
+  unless (prism_generated_srcs.all? { |n| File.exist?("#{prism_dir}/src/#{n}.c") } &&
+          prism_generated_headers.all? { |h| File.exist?("#{prism_dir}/#{h}") })
     FileUtils.cd prism_dir do
       sh "templates/template.rb"
     end
   end
 
-  %w(node prettyprint serialize token_type).each do |name|
+  prism_generated_srcs.each do |name|
     dst = "#{prism_dir}/src/#{name}.c"
-    # file task does not work when dst does not exist. why?
-    Rake::Task[:prism_templates].invoke unless File.exist?(dst)
     file dst => ["#{prism_templates_dir}/src/#{name}.c.erb", "#{prism_templates_dir}/template.rb"] do |t|
-      Rake::Task[:prism_templates].invoke
+      FileUtils.cd prism_dir do
+        sh "templates/template.rb"
+      end
     end
   end
 
