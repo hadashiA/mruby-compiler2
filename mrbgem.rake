@@ -49,7 +49,7 @@ MRuby::Gem::Specification.new('mruby-compiler2') do |spec|
   unless (prism_generated_srcs.all? { |n| File.exist?("#{prism_dir}/src/#{n}.c") } &&
           prism_generated_headers.all? { |h| File.exist?("#{prism_dir}/#{h}") })
     FileUtils.cd prism_dir do
-      sh "templates/template.rb"
+      ruby "templates/template.rb"
     end
   end
 
@@ -57,7 +57,7 @@ MRuby::Gem::Specification.new('mruby-compiler2') do |spec|
     dst = "#{prism_dir}/src/#{name}.c"
     file dst => ["#{prism_templates_dir}/src/#{name}.c.erb", "#{prism_templates_dir}/template.rb"] do |t|
       FileUtils.cd prism_dir do
-        sh "templates/template.rb"
+        ruby "templates/template.rb"
       end
     end
   end
